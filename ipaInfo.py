@@ -63,6 +63,10 @@ def main():
     
     file_dir = os.path.dirname(input_path)
     
+    # if ipa in current folder need to add the path.
+    if file_dir == "":
+        file_dir = os.getcwd()
+    
     app_dir = glob.glob( file_dir + "/Payload/*")[0]
     
     info_path = app_dir + "/info.plist"
