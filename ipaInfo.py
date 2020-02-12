@@ -1,5 +1,5 @@
 #  IpaInfo.py
-
+# -*- coding: utf-8 -*
 import sys
 import os
 import re
@@ -11,6 +11,7 @@ import optparse
 import time
 import datetime
 
+VERSION_NUMBER = "1.0"
 
 def get_value_by_key(path, key):
     with open(path, "r") as f:
@@ -36,7 +37,8 @@ def remove_payload(path):
     
 # setting options
 def get_options():
-    optParser = optparse.OptionParser()
+    tool_version = "ipaInfo version : %s" % (VERSION_NUMBER)
+    optParser = optparse.OptionParser(version=tool_version)
     optParser.add_option("-f", "--file", action="store", dest="input_path", help="provide ipa path.")
     
     opts_args = optParser.parse_args()
@@ -73,6 +75,8 @@ def main():
     xcode_version = get_value_by_key( info_path, "DTXcode")
     bundle_id = get_value_by_key( info_path, "CFBundleIdentifier")
     minimum_ios = get_value_by_key( info_path, "MinimumOSVersion")
+    short_version = get_value_by_key( info_path, "CFBundleShortVersionString")
+    build_version = get_value_by_key( info_path, "CFBundleVersion")
     
     embedded_path = app_dir + "/embedded.mobileprovision"
     expiration_date = get_value_by_key( embedded_path, "ExpirationDate")
@@ -80,20 +84,28 @@ def main():
     creation_date = get_value_by_key( embedded_path, "CreationDate")
     creation_string = creation_date.strftime("%Y-%m-%d")
     app_name = get_value_by_key( embedded_path, "AppIDName")
-    
-    
+    team_name = get_value_by_key( embedded_path, "TeamName")
+    uuid = get_value_by_key( embedded_path, "UUID")
+
     result_file = input_path+"-info.txt"
     file = open( result_file, "w+")
     
     result_string = (
+    "Tool Version : " + VERSION_NUMBER  + "\n" +
     ipa_file_name + "\n" +
     "-----------------------------------------" + "\n"
-    "App Name           : " + app_name + "\n"
-    "Expiration Date    : " + expiration_string + "\n"
-    "Bundle ID          : " + bundle_id + "\n"
-    "Minimum Support    : " + "iOS " + minimum_ios + "\n"
-    "Build Xcode        : " + xcode_version + "\n"
-    "Creation Date      : " + creation_string + "\n"
+    "證書名稱(App Name) : " + app_name + "\n"
+    "Bundle ID : " + bundle_id + "\n"
+    "Team Name : " + team_name + "\n"
+    "UUID      : " + uuid + "\n"
+    "版本號1(ShortVersion)  : " + short_version + "\n"
+    "版本號2(BundleVersion) : " + build_version + "\n"
+    "證書到期日(Expiration Date) : " + expiration_string + "\n"
+    "最低支援版本(Minimum Support) : " + "iOS " + minimum_ios + "\n"
+    "建造日期(Creation Date) : " + creation_string + "\n"
+    "建置環境(Build Xcode)   : " + xcode_version + "\n"
+    "-----------------------------------------" + "\n"
+    "Create By Irving Huang" + "\n"
     )
     
     file.write(
