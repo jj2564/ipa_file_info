@@ -10,8 +10,39 @@ import shutil
 import optparse
 import time
 import datetime
+import subprocess
+
+tags = {"AppIDName": False,
+        "UUID": False,
+        "TeamName": False,
+        "ExpirationDate": False,
+        "CreationDate":False}
+
+dictValue = {
+        "AppIDName": "",
+        "UUID": "",
+        "TeamName": "",
+        "ExpirationDate": "",
+        "CreationDate":""}
 
 VERSION_NUMBER = "1.0"
+
+def get_target_tag(key, l):
+    if tags[key]:
+        value = l.replace(r"<string>","").replace(r"</string>","").replace("\t","").replace("\n","")
+        if key == "ExpirationDate" or key == "CreationDate":
+            value = value.replace(r"<date>","").replace(r"</date>","").split("T")[0]
+        dictValue[key] = value
+        tags[key] = False
+    if ("<key>%s</key>"%key) in l:
+        tags[key] = True
+
+def get_provisoin_value(path):
+    with open(path,"rb") as f:
+        plist_file = f.readlines()
+        for line in plist_file:
+            for key in tags.keys():
+                get_target_tag(key,line)
 
 def get_value_by_key(path, key):
     with open(path, "r") as f:
@@ -24,6 +55,7 @@ def get_value_by_key(path, key):
     plist_json = plistlib.readPlistFromString(plist_string)
     value = plist_json[key]
 
+    f.close()
     return value
 
 # unzip ipa to path
@@ -48,7 +80,6 @@ def get_file_name(path):
     array_path = os.path.split(path)
     file_name = array_path[1]
     return file_name
-    
 # main
 def main():
 
@@ -56,6 +87,16 @@ def main():
     input_path = options.input_path
     ipa_file_name = get_file_name(input_path)
     suffix = os.path.splitext(ipa_file_name)[-1]
+
+    # allow no "-i" switch for IPA filename if only a single argument
+    if ipa_file_name is None:
+        if len(sys.argv) > 1:
+            ipa_file_name = sys.argv[1]
+        else:
+            ipa_file_name = ""
+
+    if not os.path.exists(ipa_file_name):
+        errors.append('valid input filename not provided')
     
     if suffix == ".ipa" and os.path.isfile(input_path) :
         unzip_ipa(input_path)
@@ -64,8 +105,7 @@ def main():
         sys.exit(0)
     
     file_dir = os.path.dirname(input_path)
-    
-    # if ipa in current folder need to add the path.
+
     if file_dir == "":
         file_dir = os.getcwd()
     
@@ -79,14 +119,13 @@ def main():
     build_version = get_value_by_key( info_path, "CFBundleVersion")
     
     embedded_path = app_dir + "/embedded.mobileprovision"
-    expiration_date = get_value_by_key( embedded_path, "ExpirationDate")
-    expiration_string = expiration_date.strftime("%Y-%m-%d")
-    creation_date = get_value_by_key( embedded_path, "CreationDate")
-    creation_string = creation_date.strftime("%Y-%m-%d")
-    app_name = get_value_by_key( embedded_path, "AppIDName")
-    team_name = get_value_by_key( embedded_path, "TeamName")
-    uuid = get_value_by_key( embedded_path, "UUID")
-
+    get_provisoin_value( embedded_path )
+    expiration_string = dictValue["ExpirationDate"]
+    creation_string = dictValue["CreationDate"]
+    app_name = dictValue["AppIDName"]
+    team_name = dictValue["TeamName"]
+    uuid = dictValue["UUID"]
+    
     result_file = input_path+"-info.txt"
     file = open( result_file, "w+")
     
